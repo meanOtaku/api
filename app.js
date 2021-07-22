@@ -11,15 +11,11 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(express.static('public'));
-app.use(express.json());
+app.use(bodyParser.json());
 mongoose.connect("mongodb://localhost:27017/courseDB", {useNewUrlParser: true, useUnifiedTopology: true});
-
-const moduleSchema = {
-    name: {
-        type: Array,
-        //required: true
-    }
-}
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
 
 
 const curriculumSchema = {
@@ -27,7 +23,7 @@ const curriculumSchema = {
         type: String,
         //required: true
     },
-    modules: [moduleSchema]
+    modules: String
 }
 
 const courseSchema = {
@@ -38,6 +34,7 @@ const courseSchema = {
     AgeGroupRecommendation: String,
     content: {
         type: String,
+        minlength: 55,
         required: true
     },
     curriculum: [curriculumSchema]
@@ -45,12 +42,14 @@ const courseSchema = {
 
 const Course = mongoose.model("Course", courseSchema);
 
-
+//COURSE ROUTE--------------------------------------------------------------------
+//finished whole route
 app.route("/course")
 
 .get(function(req, res){
     Course.find(function(err, foundCourses){
         if(!err){
+            console.log("Course Sended");
             res.send(foundCourses);
         }else{
             res.send(err);
@@ -59,13 +58,15 @@ app.route("/course")
 })
 
 .post(function(req, res){
+    console.log(req.body);
     const newCourse = new Course({
-        title: req.body.title,
-        content: req.body.content
+        title: req.body.title.trim(),
+        content: req.body.content.trim()
     })
 
     newCourse.save(function(err){
         if(!err){
+            console.log("added course");
             res.send("successfully added a new course");
         }else{
             res.send(err);
@@ -83,8 +84,11 @@ app.route("/course")
     });
 });
 
+
+//Inside Course------------------------------------------------------------------------
 app.route("/course/:courseTitle")
 
+//finished
 .get(function(req, res){
     Course.findOne({title: req.params.courseTitle}, function(err, foundCourse){
         if(foundCourse){
@@ -95,10 +99,11 @@ app.route("/course/:courseTitle")
     });
 })
 
+
 .put(function(req, res){
     Course.updateOne(
         {title: req.params.courseTitle},
-        {title: req.body.title, content: req.body.content},
+        {title: req.body.title.trim(), content: req.body.content.trim()},
         {overwrite: true},
         function(err){
             if(!err){
@@ -108,13 +113,15 @@ app.route("/course/:courseTitle")
     );
 })
 
+//finished
 .patch(function(req, res){
     Course.updateOne(
-        {_id: req.params.courseTitle},
-        {$set: req.body},
+        {title: req.params.courseTitle},
+        {$push: {curriculum: {heading: req.body.heading.trim(), modules: req.body.modules.trim()}}},
         function(err){
             if(!err){
                 console.log(req.body);
+                console.log("Updated")
                 res.send("Updated");
             }else{
                 res.send("Unable to update");
@@ -123,10 +130,11 @@ app.route("/course/:courseTitle")
     );
 })
 
+//finished
 .delete(function(req, res){
 
     Course.deleteOne(
-      {_id: req.params.courseTitle},
+      {title: req.params.courseTitle},
       function(err){
         if (!err){
             console.log(req.params.courseTitle);
@@ -138,56 +146,31 @@ app.route("/course/:courseTitle")
     );
   });
 
+//Inside course and inside module------------------------------------------------------
 
-  app.route("/course/:courseTitle/:moduleTitle")
+app.route("/course/:courseTitle/:moduleTitle")
 
   .patch(function(req, res){
-      Course.updateOne(
-        {_id: req.params.courseTitle},
-        {$push: {curriculum: { _id: req.params.moduleTitle }}},
+      Course.findOneAndUpdate(
+        {curriculum: {heading: req.params.moduleTitle}},
+        {$push: {curriculum: {modules: req.body.name.trim()}}},
         function(err){
             if(!err){
-                res.send("Module deleted");
+                console.log(req.body);
+                res.send("Module updated");
             }
         }
       )
   })
 
-
+//finished
   .delete(function(req, res){
     Course.updateOne(
-        {_id: req.params.courseTitle},
-        {$pull: {curriculum: { _id: req.params.moduleTitle }}},
+        {title: req.params.courseTitle},
+        {$pull: {curriculum: {heading: req.params.moduleTitle}}},
         function(err){
             if(!err){
-                res.send("Module deleted");
-            }
-        }
-    )
-  });
-
-
-  app.route("/course/:courseTitle/:moduleTitle/:nameTitle")
-
-  .patch(function(req, res){
-      Course.updateOne(
-        {_id: req.params.courseTitle},
-        {$push: {curriculum: { name: {_id: req.params.nameTitle} }}},
-        function(err){
-            if(!err){
-                res.send("Module deleted");
-            }
-        }
-      )
-  })
-
-
-  .delete(function(req, res){
-    Course.updateOne(
-        {_id: req.params.courseTitle},
-        {$pull: {curriculum: {  name: {_id: req.params.nameTitle} }}},
-        function(err){
-            if(!err){
+                console.log(req.params.moduleTitle);
                 res.send("Module deleted");
             }
         }
@@ -196,6 +179,6 @@ app.route("/course/:courseTitle")
 
 
 
-  app.listen(process.env.PORT || 3000, function(){
+  app.listen(process.env.PORT || 5000, function(){
       console.log("server running");
   })
