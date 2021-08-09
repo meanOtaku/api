@@ -4,7 +4,7 @@ const ejs = require("ejs");
 const mongoose = require("mongoose");
 
 const app = express();
-
+const port = process.env.PORT || 5000
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({
@@ -12,21 +12,27 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(express.static('public'));
 app.use(bodyParser.json());
-mongoose.connect("mongodb://localhost:27017/courseDB", {useNewUrlParser: true, useUnifiedTopology: true});
+const dbURI = 'mongodb+srv://honeybisht123:honeybisht123@nodepro.a6gzy.mongodb.net/course?retryWrites=true&w=majority';
+mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex:true })
+  .then((result) => app.listen(port, function(){
+      console.log("Server Running");
+  }))
+  .catch((err) => console.log(err));
+
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 
 
-const curriculumSchema = {
+const curriculumSchema = new mongoose.Schema({
     heading: {
         type: String,
         //required: true
     },
     modules: String
-}
+})
 
-const courseSchema = {
+const courseSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true
@@ -38,7 +44,7 @@ const courseSchema = {
         required: true
     },
     curriculum: [curriculumSchema]
-}
+})
 
 const Course = mongoose.model("Course", courseSchema);
 
@@ -69,6 +75,7 @@ app.route("/course")
             console.log("added course");
             res.send("successfully added a new course");
         }else{
+            console.log(err);
             res.send(err);
         }
     });
@@ -178,7 +185,3 @@ app.route("/course/:courseTitle/:moduleTitle")
   });
 
 
-
-  app.listen(process.env.PORT || 5000, function(){
-      console.log("server running");
-  })
