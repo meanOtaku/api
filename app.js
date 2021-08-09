@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(express.static('public'));
 app.use(bodyParser.json());
-const dbURI = 'mongodb+srv://Cherag:racoon2004R@cluster0.qbqdg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority';
+const dbURI = 'mongodb+srv://Cherag:racoon2004R@cluster0.qbqdg.mongodb.net/courses?retryWrites=true&w=majority';
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex:true })
   .then((result) => app.listen(port, function(){
       console.log("Server Running");
